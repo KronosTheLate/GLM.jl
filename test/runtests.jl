@@ -912,3 +912,10 @@ end
     @test hash(NegativeBinomialLink(0.3)) == hash(NegativeBinomialLink(0.3))
     @test hash(NegativeBinomialLink(0.31)) != hash(NegativeBinomialLink(0.3))
 end
+
+@testset "Issue #444. Views" begin
+    X = randn(10, 2)
+    y = X*ones(2)
+    @test coef(glm(X, y, Normal(), IdentityLink())) ==
+        coef(glm(view(X, 1:9, :), view(y, 1:9), Normal(), IdentityLink()))
+end

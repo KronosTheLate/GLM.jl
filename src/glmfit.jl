@@ -49,11 +49,15 @@ function GlmResp(y::V, d::D, l::L, η::V, μ::V, off::V, wts::V) where {V<:FPVec
     return GlmResp{V,D,L}(y, d, similar(y), η, μ, off, wts, similar(y), similar(y))
 end
 
-function GlmResp(y::V, d::D, l::L, off::V, wts::V) where {V<:FPVector,D,L}
-    η   = similar(y)
-    μ   = similar(y)
-    r   = GlmResp(y, d, l, η, μ, off, wts)
-    initialeta!(r.eta, d, l, y, wts, off)
+function GlmResp(y::FPVector, d::Distribution, l::Link, off::FPVector, wts::FPVector)
+    # Instead of convert(Vector{Float64}, y) to be more ForwardDiff friendly
+    _y   = float(convert(Vector, y))
+    _off = float(convert(Vector, off))
+    _wts = float(convert(Vector, wts))
+    η    = similar(_y)
+    μ    = similar(_y)
+    r    = GlmResp(_y, d, l, η, μ, _off, _wts)
+    initialeta!(r.eta, d, l, _y, _wts, _off)
     updateμ!(r, r.eta)
     return r
 end
@@ -465,7 +469,7 @@ Fit a generalized linear model to data.
 $FIT_GLM_DOC
 """
 function fit(::Type{M},
-    X::Union{Matrix{T},SparseMatrixCSC{T}},
+    X::AbstractMatrix,
     y::AbstractVector{<:Real},
     d::UnivariateDistribution,
     l::Link = canonicallink(d);
@@ -485,7 +489,7 @@ function fit(::Type{M},
 end
 
 fit(::Type{M},
-    X::Union{Matrix,SparseMatrixCSC},
+    X::AbstractMatrix,
     y::AbstractVector,
     d::UnivariateDistribution,
     l::Link=canonicallink(d); kwargs...) where {M<:AbstractGLM} =
